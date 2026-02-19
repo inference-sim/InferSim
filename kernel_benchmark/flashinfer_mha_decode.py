@@ -8,8 +8,9 @@ import pandas as pd
 import torch
 import torch.utils.benchmark as benchmark
 from flashinfer import BatchDecodeWithPagedKVCacheWrapper
-from sglang.srt.layers.attention.flashinfer_backend import \
-    should_use_tensor_core
+
+# Use local implementation to avoid sglang dependency
+from flashinfer_backend_utils import should_use_tensor_core
 
 parent_dir = os.path.join(os.path.dirname(__file__), "..")
 sys.path.append(os.path.abspath(parent_dir))
