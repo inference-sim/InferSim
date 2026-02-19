@@ -193,6 +193,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-k", type=int, default=1024, help="[m, k] * [k, n]")
     parser.add_argument("-n", type=int, default=1024, help="[m, k] * [k, n]")
-    parser.add_argument("--gpu-tflops", type=int, default=296, help="GPU FP8 TFLOPS")
+    parser.add_argument("--gpu-tflops", type=float, default=296, help="GPU FP8 TFLOPS")
     args = parser.parse_args()
     main(args)

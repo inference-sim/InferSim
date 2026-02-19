@@ -260,7 +260,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--tp-size", type=int, default=1, help="tp size")
     parser.add_argument(
-        "--fp16-tflops", type=int, default=148, help="GPU FP16 TFLOPS size"
+        "--fp16-tflops", type=float, default=148, help="GPU FP16 TFLOPS size"
     )
 
     args = parser.parse_args()
