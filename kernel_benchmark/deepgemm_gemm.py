@@ -142,15 +142,18 @@ def test_gemm(m, k, n) -> None:
             f"{2 * m * n * k / t / 1e12:4.0f} TFLOPS | "
             f"{(count_bytes(a, b, d) + count_bytes(c) * int(accumulate)) / 1e9 / t:4.0f} GB/s"
         )
+        sys.stdout.flush()
         tflops = 2 * m * n * k / t / 1e12
         return t * 1e6, tflops
 
 
 def main(args) -> None:
     print("Testing grouped masked GEMM:")
-    results = []
+    print(f"K={args.k}, N={args.n}")
+    sys.stdout.flush()
 
-    for m in [
+    results = []
+    m_values = [
         8,
         16,
         32,
@@ -165,7 +168,10 @@ def main(args) -> None:
         32768,
         64 * 1024,
         128 * 1024,
-    ]:
+    ]
+    total_m = len(m_values)
+
+    for idx, m in enumerate(m_values, 1):
         t, tflops = test_gemm(m, args.k, args.n)
         results.append(
             {
@@ -176,6 +182,9 @@ def main(args) -> None:
                 "mfu": round(tflops / args.gpu_tflops, 3),
             }
         )
+        print(f"  [{idx}/{total_m}] M={m:6d}: {t:7.1f} us, MFU={tflops / args.gpu_tflops:.3f}")
+        sys.stdout.flush()
+
     print()
     df = pd.DataFrame(results)
     df.to_csv("gemm.csv", index=False)
