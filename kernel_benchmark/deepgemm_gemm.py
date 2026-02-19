@@ -185,6 +185,9 @@ def main(args) -> None:
         print(f"  [{idx}/{total_m}] M={m:6d}: {t:7.1f} us, MFU={tflops / args.gpu_tflops:.3f}")
         sys.stdout.flush()
 
+        # Free memory after each M to prevent OOM on large batch sizes
+        torch.cuda.empty_cache()
+
     print()
     df = pd.DataFrame(results)
     df.to_csv("gemm.csv", index=False)
