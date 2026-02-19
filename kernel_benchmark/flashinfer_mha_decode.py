@@ -1,5 +1,6 @@
 # Adapt from https://github.com/sgl-project/sglang/blob/main/benchmark/kernels/decoding_attention_triton/triton_flashinfer_cudnn.py
 import argparse
+import gc
 import os
 import sys
 
@@ -123,6 +124,8 @@ def main(args):
     if args.kv_cache_dtype == "fp8":
         kv_cache_dtype = torch.float8_e4m3fn
 
+    # Full test matrix including extreme serving scenarios
+    # OOM errors are caught gracefully and those configs are skipped
     batch_kv_mapping = {
         1: [1024, 4096, 8192, 16384, 32768, 65536, 131072],
         16: [1024, 4096, 8192, 16384, 32768, 65536, 131072],
@@ -141,72 +144,99 @@ def main(args):
     attn_flashinfer = decode_attention_flashinfer(
         kv_cache_dtype, num_attention_heads, num_kv_heads
     ).apply
+
+    skipped_configs = []
     for batch_size, kv_len in configs:
-        q = torch.randn(
-            batch_size, num_attention_heads, head_dim, dtype=dtype, device="cuda"
-        )
-        kv_data = (
-            torch.randn(
-                batch_size * kv_len,
+        try:
+            q = torch.randn(
+                batch_size, num_attention_heads, head_dim, dtype=dtype, device="cuda"
+            )
+            kv_data = (
+                torch.randn(
+                    batch_size * kv_len,
+                    num_kv_heads,
+                    head_dim,
+                    dtype=torch.bfloat16,
+                    device="cuda",
+                ).to(kv_cache_dtype),
+                torch.randn(
+                    batch_size * kv_len,
+                    num_kv_heads,
+                    head_dim,
+                    dtype=torch.bfloat16,
+                    device="cuda",
+                ).to(kv_cache_dtype),
+            )
+            attn_core_gflops, other_gflops = get_mha_gflops(config, 1, kv_len)
+            attn_core_gflops = attn_core_gflops * batch_size / args.tp_size
+
+            us_flashinfer, _ = attn_flashinfer(
+                q,
+                kv_data,
+                batch_size,
+                kv_len,
+                num_attention_heads,
                 num_kv_heads,
                 head_dim,
-                dtype=torch.bfloat16,
-                device="cuda",
-            ).to(kv_cache_dtype),
-            torch.randn(
-                batch_size * kv_len,
+                dtype,
+                kv_cache_dtype,
+            )
+            mfu = attn_core_gflops * 1e3 / (fp16_tflops * us_flashinfer)
+            print(
+                attn_type,
+                "  ",
+                num_attention_heads,
+                "  ",
                 num_kv_heads,
+                "  ",
                 head_dim,
-                dtype=torch.bfloat16,
-                device="cuda",
-            ).to(kv_cache_dtype),
-        )
-        attn_core_gflops, other_gflops = get_mha_gflops(config, 1, kv_len)
-        attn_core_gflops = attn_core_gflops * batch_size / args.tp_size
+                "  ",
+                batch_size,
+                "  ",
+                kv_len,
+                "  ",
+                us_flashinfer,
+                "  ",
+                mfu,
+            )
 
-        us_flashinfer, _ = attn_flashinfer(
-            q,
-            kv_data,
-            batch_size,
-            kv_len,
-            num_attention_heads,
-            num_kv_heads,
-            head_dim,
-            dtype,
-            kv_cache_dtype,
-        )
-        mfu = attn_core_gflops * 1e3 / (fp16_tflops * us_flashinfer)
-        print(
-            attn_type,
-            "  ",
-            num_attention_heads,
-            "  ",
-            num_kv_heads,
-            "  ",
-            head_dim,
-            "  ",
-            batch_size,
-            "  ",
-            kv_len,
-            "  ",
-            us_flashinfer,
-            "  ",
-            mfu,
-        )
+            results.append(
+                {
+                    "dtype": "bf16",
+                    "kv_dtype": args.kv_cache_dtype,
+                    "batch_size": batch_size,
+                    "kv_len": kv_len,
+                    "latency_us": round(us_flashinfer, 3),
+                    "mfu": round(mfu, 3),
+                }
+            )
 
-        results.append(
-            {
-                "dtype": "bf16",
-                "kv_dtype": args.kv_cache_dtype,
-                "batch_size": batch_size,
-                "kv_len": kv_len,
-                "latency_us": round(us_flashinfer, 3),
-                "mfu": round(mfu, 3),
-            }
-        )
+            # Aggressively free GPU memory before next iteration
+            torch.cuda.synchronize()  # Ensure all GPU operations complete
+            del q, kv_data
+            gc.collect()  # Force Python garbage collection
+            torch.cuda.empty_cache()  # Release cached memory back to CUDA
+
+        except torch.OutOfMemoryError as e:
+            # Skip configs that don't fit in GPU memory (expected for extreme cases)
+            tensor_size_gb = batch_size * kv_len * num_kv_heads * head_dim * 2 * 2 / (1024**3)
+            print(f"  SKIP batch={batch_size}, kv_len={kv_len} (OOM: needs ~{tensor_size_gb:.1f}GB)")
+            skipped_configs.append((batch_size, kv_len))
+
+            # Clean up any partially allocated tensors
+            torch.cuda.synchronize()
+            gc.collect()
+            torch.cuda.empty_cache()
+            continue
+
+    # Print summary
+    if skipped_configs:
+        print(f"\nSkipped {len(skipped_configs)} configs due to OOM (expected for extreme batch/kv_len):")
+        for batch, kv in skipped_configs:
+            print(f"  - batch={batch}, kv_len={kv}")
 
     df = pd.DataFrame(results)
-    print("Writing result into attention_benchmark.csv...")
+    print(f"\nWriting {len(results)} results into attention_benchmark.csv...")
     df.to_csv("attention_benchmark.csv", index=False)
 
 
