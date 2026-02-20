@@ -66,26 +66,18 @@ spec:
           echo "Installing git..."
           apt-get update -qq && apt-get install -y -qq git
 
-          # Clone fresh code from GitHub to pod-local storage (not PVC)
-          # This avoids race conditions when multiple pods run in parallel
-          echo "Cloning inference-sim from GitHub (branch: roofline_valid)..."
-          WORK_DIR=/workspace/inference-sim
+          # Clone InferSim repo directly (contains benchmarks and orchestration)
+          echo "Cloning InferSim from GitHub (branch: roofline-benchmark-improvements)..."
+          WORK_DIR=/workspace/InferSim
           rm -rf $WORK_DIR
-          git clone --branch roofline_valid --depth 1 \
-            https://github.com/inference-sim/inference-sim.git \
+          git clone --branch roofline-benchmark-improvements --depth 1 \
+            https://github.com/inference-sim/InferSim.git \
             $WORK_DIR
           cd $WORK_DIR
 
           echo "Current commit:"
           git log -1 --oneline
           echo ""
-
-          # Clone InferSim (separate repo with benchmark kernels)
-          # Using fork with OOM handling and sglang dependency removed
-          echo "Cloning InferSim from GitHub (fork with improvements)..."
-          git clone --branch roofline-benchmark-improvements --depth 1 \
-            https://github.com/inference-sim/InferSim.git
-          cd InferSim
 
           # Install remaining system dependencies
           echo "Installing system dependencies..."
@@ -107,7 +99,7 @@ spec:
               echo "This is required for prefill benchmarks"
               exit 1
             }
-            cd $WORK_DIR/InferSim
+            cd $WORK_DIR
           }
 
           # Verify sgl-kernel import works
@@ -119,7 +111,7 @@ spec:
             git clone https://github.com/sgl-project/sglang.git --depth 1
             cd sglang/kernel
             MAX_JOBS=4 pip install --no-cache-dir -e . --verbose --force-reinstall
-            cd $WORK_DIR/InferSim
+            cd $WORK_DIR
           }
 
           # Build deep-gemm from source (only if running GEMM benchmarks)
@@ -138,7 +130,7 @@ spec:
               echo "Ensure CUDA 12.6+ is available"
               exit 1
             }
-            cd $WORK_DIR/InferSim
+            cd $WORK_DIR
           else
             echo "Skipping deep-gemm build (not running GEMM benchmarks)"
           fi
@@ -166,18 +158,18 @@ spec:
           mkdir -p /mnt/bench_data/mha/prefill/${GPU_TYPE_LOWER}
           mkdir -p /mnt/bench_data/mha/decode/${GPU_TYPE_LOWER}
           mkdir -p /mnt/bench_data/gemm/${GPU_TYPE_LOWER}
-          cp -v InferSim/bench_data/mha/prefill/${GPU_TYPE_LOWER}/*.csv /mnt/bench_data/mha/prefill/${GPU_TYPE_LOWER}/ 2>/dev/null || true
-          cp -v InferSim/bench_data/mha/decode/${GPU_TYPE_LOWER}/*.csv /mnt/bench_data/mha/decode/${GPU_TYPE_LOWER}/ 2>/dev/null || true
-          cp -v InferSim/bench_data/gemm/${GPU_TYPE_LOWER}/*.csv /mnt/bench_data/gemm/${GPU_TYPE_LOWER}/ 2>/dev/null || true
+          cp -v bench_data/mha/prefill/${GPU_TYPE_LOWER}/*.csv /mnt/bench_data/mha/prefill/${GPU_TYPE_LOWER}/ 2>/dev/null || true
+          cp -v bench_data/mha/decode/${GPU_TYPE_LOWER}/*.csv /mnt/bench_data/mha/decode/${GPU_TYPE_LOWER}/ 2>/dev/null || true
+          cp -v bench_data/gemm/${GPU_TYPE_LOWER}/*.csv /mnt/bench_data/gemm/${GPU_TYPE_LOWER}/ 2>/dev/null || true
           echo "✓ Results copied to PVC at /mnt/bench_data/"
 
           # Upload results (if configured)
           if [ -n "${S3_BUCKET}" ]; then
             echo "Uploading results to S3..."
-            aws s3 cp InferSim/bench_data/mha/${GPU_TYPE_LOWER}/ \
+            aws s3 cp bench_data/mha/${GPU_TYPE_LOWER}/ \
               s3://${S3_BUCKET}/benchmarks/mha/${GPU_TYPE_LOWER}/ \
               --recursive
-            aws s3 cp InferSim/bench_data/gemm/${GPU_TYPE_LOWER}/ \
+            aws s3 cp bench_data/gemm/${GPU_TYPE_LOWER}/ \
               s3://${S3_BUCKET}/benchmarks/gemm/${GPU_TYPE_LOWER}/ \
               --recursive
           fi

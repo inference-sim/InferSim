@@ -91,7 +91,7 @@ def run_prefill_benchmark(nh: int, nkv: int, dh: int, gpu_type: str, gpu_specs: 
         ]
 
         print(f"Command: {' '.join(cmd)}")
-        result = subprocess.run(cmd, cwd="InferSim", capture_output=True, text=True)
+        result = subprocess.run(cmd, cwd=".", capture_output=True, text=True)
 
         if result.returncode != 0:
             print(f"✗ Prefill benchmark failed:")
@@ -102,10 +102,10 @@ def run_prefill_benchmark(nh: int, nkv: int, dh: int, gpu_type: str, gpu_specs: 
 
         # Move output to final location
         shape_str = f"{nh}-{nkv}-{dh}"
-        output_dir = Path(f"InferSim/bench_data/mha/prefill/{gpu_type.lower()}")
+        output_dir = Path(f"bench_data/mha/prefill/{gpu_type.lower()}")
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        src = Path("InferSim/attention_benchmark.csv")
+        src = Path("attention_benchmark.csv")
         dst = output_dir / f"{shape_str}.csv"
 
         if src.exists():
@@ -140,7 +140,7 @@ def run_decode_benchmark(nh: int, nkv: int, dh: int, tp: int, gpu_type: str, gpu
         ]
 
         print(f"Command: {' '.join(cmd)}")
-        result = subprocess.run(cmd, cwd="InferSim", capture_output=True, text=True)
+        result = subprocess.run(cmd, cwd=".", capture_output=True, text=True)
 
         if result.returncode != 0:
             print(f"✗ Decode benchmark failed:")
@@ -151,10 +151,10 @@ def run_decode_benchmark(nh: int, nkv: int, dh: int, tp: int, gpu_type: str, gpu
 
         # Move output to final location
         shape_str = f"{nh}-{nkv}-{dh}"
-        output_dir = Path(f"InferSim/bench_data/mha/decode/{gpu_type.lower()}")
+        output_dir = Path(f"bench_data/mha/decode/{gpu_type.lower()}")
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        src = Path("InferSim/attention_benchmark.csv")
+        src = Path("attention_benchmark.csv")
         dst = output_dir / f"{shape_str}-tp{tp}.csv"
 
         if src.exists():
@@ -188,12 +188,12 @@ def run_gemm_benchmark(gpu_type: str, gpu_specs: dict):
     n_values = gemm_sweep["n_values"]
     peak_tflops = gpu_specs["peak_tflops_fp16"]
 
-    output_dir = Path(f"InferSim/bench_data/gemm/{gpu_type.lower()}")
+    output_dir = Path(f"bench_data/gemm/{gpu_type.lower()}")
     output_dir.mkdir(parents=True, exist_ok=True)
     gemm_output = output_dir / "data.csv"
 
     # Run GEMM sweeps
-    gemm_tmp = Path("InferSim/gemm.csv")
+    gemm_tmp = Path("gemm.csv")
     first_success = True  # Track first successful write, not first attempt
 
     # Calculate total combinations for progress tracking
@@ -215,7 +215,7 @@ def run_gemm_benchmark(gpu_type: str, gpu_specs: dict):
             ]
 
             # Don't capture output so progress logs stream through
-            result = subprocess.run(cmd, cwd="InferSim")
+            result = subprocess.run(cmd, cwd=".")
 
             if result.returncode != 0:
                 print(f"  ✗ GEMM K={k} N={n} failed")
