@@ -12,7 +12,9 @@ import csv
 
 def load_config() -> Dict:
     """Load benchmark configuration"""
-    config_path = Path("scripts/config/benchmark_config.json")
+    # Config is in the same directory as this script
+    script_dir = Path(__file__).parent
+    config_path = script_dir / "config" / "benchmark_config.json"
     if not config_path.exists():
         print(f"Error: Config not found: {config_path}")
         sys.exit(1)

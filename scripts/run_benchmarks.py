@@ -28,7 +28,9 @@ def parse_shape(shape_str: str) -> tuple[int, int, int]:
 
 def load_config() -> dict:
     """Load benchmark configuration for GPU specs and validation"""
-    config_path = Path("scripts/config/benchmark_config.json")
+    # Config is in scripts/config/ relative to this script
+    script_dir = Path(__file__).parent
+    config_path = script_dir / "config" / "benchmark_config.json"
     if not config_path.exists():
         print(f"Error: Config not found: {config_path}")
         sys.exit(1)
