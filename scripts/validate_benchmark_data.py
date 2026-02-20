@@ -12,7 +12,7 @@ import csv
 
 def load_config() -> Dict:
     """Load benchmark configuration"""
-    config_path = Path("config/benchmark_config.json")
+    config_path = Path("scripts/config/benchmark_config.json")
     if not config_path.exists():
         print(f"Error: Config not found: {config_path}")
         sys.exit(1)

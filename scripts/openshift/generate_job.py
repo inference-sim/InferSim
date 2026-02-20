@@ -10,7 +10,7 @@ from pathlib import Path
 
 def load_config(repo_root: Path) -> dict:
     """Load benchmark configuration"""
-    config_path = repo_root / "config" / "benchmark_config.json"
+    config_path = repo_root / "scripts" / "config" / "benchmark_config.json"
     if not config_path.exists():
         print(f"Error: Config file not found: {config_path}")
         sys.exit(1)
