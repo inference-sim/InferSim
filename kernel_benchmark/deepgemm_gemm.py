@@ -205,6 +205,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-k", type=int, default=1024, help="[m, k] * [k, n]")
     parser.add_argument("-n", type=int, default=1024, help="[m, k] * [k, n]")
-    parser.add_argument("--gpu-tflops", type=float, default=296, help="GPU FP8 TFLOPS")
+    parser.add_argument("--gpu-tflops", type=float, required=True, help="GPU FP8 TFLOPS peak (REQUIRED - e.g., H100=1979, H20=296)")
     args = parser.parse_args()
+
+    # Warn if MFU calculation will produce values > 1.0
+    print(f"Using GPU peak: {args.gpu_tflops} TFLOPs (FP8)")
+    print("Note: MFU values > 1.0 indicate incorrect peak TFLOPs parameter")
+    print()
+
     main(args)

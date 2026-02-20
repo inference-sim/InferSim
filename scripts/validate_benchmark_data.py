@@ -91,6 +91,14 @@ def validate_mha_prefill(data_dir: Path, model_configs: List[Dict], mfu_ranges: 
                 reader = csv.DictReader(f)
                 for i, row in enumerate(reader, 1):
                     mfu = float(row["mfu"])
+
+                    # Check for MFU > 1.0 (always invalid - indicates wrong peak TFLOPs)
+                    if mfu > 1.0:
+                        print(f"  ERROR row {i}: MFU={mfu:.3f} > 1.0 (impossible! Check peak TFLOPs parameter)")
+                        failed += 1
+                        passed -= 1  # This file is now failed
+                        break
+
                     valid, msg = validate_mfu_range(mfu, "prefill", mfu_ranges)
                     if not valid:
                         print(f"  WARNING row {i}: {msg}")
@@ -137,6 +145,14 @@ def validate_mha_decode(data_dir: Path, model_configs: List[Dict], mfu_ranges: D
                     reader = csv.DictReader(f)
                     for i, row in enumerate(reader, 1):
                         mfu = float(row["mfu"])
+
+                        # Check for MFU > 1.0 (always invalid - indicates wrong peak TFLOPs)
+                        if mfu > 1.0:
+                            print(f"  ERROR TP={tp} row {i}: MFU={mfu:.3f} > 1.0 (impossible! Check peak TFLOPs parameter)")
+                            failed += 1
+                            passed -= 1  # This file is now failed
+                            break
+
                         valid, msg = validate_mfu_range(mfu, "decode", mfu_ranges)
                         if not valid:
                             print(f"  WARNING TP={tp} row {i}: {msg}")
@@ -184,11 +200,23 @@ def validate_gemm_data(data_dir: Path, gemm_sweep: Dict, mfu_ranges: Dict) -> Tu
         with open(filepath) as f:
             reader = csv.DictReader(f)
             low_mfu_count = 0
-            for row in reader:
+            invalid_mfu_count = 0
+            for i, row in enumerate(reader, 1):
                 mfu = float(row["mfu"])
+
+                # Check for MFU > 1.0 (always invalid - indicates wrong peak TFLOPs)
+                if mfu > 1.0:
+                    print(f"ERROR row {i}: MFU={mfu:.3f} > 1.0 (impossible! Check peak TFLOPs parameter)")
+                    print(f"  Row: m={row['m']}, k={row['k']}, n={row['n']}")
+                    invalid_mfu_count += 1
+
                 valid, msg = validate_mfu_range(mfu, "gemm", mfu_ranges)
                 if not valid:
                     low_mfu_count += 1
+
+            if invalid_mfu_count > 0:
+                print(f"FAIL: {invalid_mfu_count} rows with MFU > 1.0 - regenerate with correct peak TFLOPs!")
+                return False, f"{invalid_mfu_count} rows with invalid MFU > 1.0"
 
             if low_mfu_count > 0:
                 print(f"WARNING: {low_mfu_count} rows with MFU outside expected range")

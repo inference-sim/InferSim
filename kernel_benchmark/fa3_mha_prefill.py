@@ -108,7 +108,10 @@ def prefill_attention_fa3():
 
 def main(args):
     config = ModelConfig(args.config_path)
-    fp16_tflops = 148
+    fp16_tflops = args.fp16_tflops
+    print(f"Using GPU peak: {fp16_tflops} TFLOPs (FP16/BF16)")
+    print("Note: MFU values > 1.0 indicate incorrect peak TFLOPs parameter")
+    print()
     head_dim = config.head_dim
     num_q_heads = config.num_attention_heads
     num_kv_heads = config.num_key_value_heads
@@ -167,6 +170,12 @@ if __name__ == "__main__":
         type=str,
         help="The path of the hf model config.json",
         required=True,
+    )
+    parser.add_argument(
+        "--fp16-tflops",
+        type=float,
+        required=True,
+        help="GPU FP16/BF16 TFLOPS peak (REQUIRED - e.g., H100=989.5, H20=148)",
     )
 
     args = parser.parse_args()

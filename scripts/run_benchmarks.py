@@ -80,12 +80,14 @@ def run_prefill_benchmark(nh: int, nkv: int, dh: int, gpu_type: str, gpu_specs: 
     print(f"{'='*60}")
 
     temp_config = create_temp_model_config(nh, nkv, dh)
+    peak_tflops = gpu_specs["peak_tflops_fp16"]
 
     try:
         cmd = [
             sys.executable,
             "kernel_benchmark/fa3_mha_prefill.py",
             "--config-path", temp_config.name,
+            "--fp16-tflops", str(peak_tflops),
         ]
 
         print(f"Command: {' '.join(cmd)}")

@@ -1,2 +1,7 @@
 __pycache__/
 *.un~
+
+# Important: DO NOT ignore these config files
+# They contain GPU specs and benchmarking configurations
+# !scripts/config/*.json (not needed - we don't ignore *.json by default)
+# !scripts/openshift/*-template.yaml (not needed - we don't ignore *.yaml by default)

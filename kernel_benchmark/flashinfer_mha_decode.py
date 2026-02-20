@@ -112,6 +112,9 @@ def decode_attention_flashinfer(kv_cache_dtype, num_attention_heads, num_kv_head
 def main(args):
     config = ModelConfig(args.config_path)
     fp16_tflops = args.fp16_tflops
+    print(f"Using GPU peak: {fp16_tflops} TFLOPs (FP16/BF16)")
+    print("Note: MFU values > 1.0 indicate incorrect peak TFLOPs parameter")
+    print()
     head_dim = config.head_dim
     num_attention_heads = config.num_attention_heads // args.tp_size
     num_kv_heads = config.num_key_value_heads // args.tp_size
@@ -260,7 +263,10 @@ if __name__ == "__main__":
     )
     parser.add_argument("--tp-size", type=int, default=1, help="tp size")
     parser.add_argument(
-        "--fp16-tflops", type=float, default=148, help="GPU FP16 TFLOPS size"
+        "--fp16-tflops",
+        type=float,
+        required=True,
+        help="GPU FP16/BF16 TFLOPS peak (REQUIRED - e.g., H100=989.5, H20=148)"
     )
 
     args = parser.parse_args()
