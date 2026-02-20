@@ -23,10 +23,19 @@ This directory contains scripts for evaluating InferSim against other LLM infere
 
 ### Vidur Simulator
 
-- **`vidur/`** - Full Vidur simulator codebase
-  - Used for comparative benchmarking against InferSim
-  - Discrete event simulator for LLM inference
-  - Includes vLLM scheduler implementation
+To use `vidur_evaluator.py`, you need to clone and set up the Vidur simulator:
+
+```bash
+# Clone Vidur into evaluation directory
+cd evaluation
+git clone https://github.com/vidur-ai/vidur.git
+cd vidur
+# Follow Vidur installation instructions
+```
+
+- Used for comparative benchmarking against InferSim
+- Discrete event simulator for LLM inference
+- Includes vLLM scheduler implementation
 
 ## Usage
 
