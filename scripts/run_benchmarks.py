@@ -188,7 +188,8 @@ def run_gemm_benchmark(gpu_type: str, gpu_specs: dict):
     gemm_sweep = config["gemm_sweep"][gpu_type]
     k_values = gemm_sweep["k_values"]
     n_values = gemm_sweep["n_values"]
-    peak_tflops = gpu_specs["peak_tflops_fp16"]
+    # GEMM uses FP8, so use FP8 peak (not FP16)
+    peak_tflops = gpu_specs["peak_tflops_fp8"]
 
     output_dir = Path(f"bench_data/gemm/{gpu_type.lower()}")
     output_dir.mkdir(parents=True, exist_ok=True)
