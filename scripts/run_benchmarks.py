@@ -257,11 +257,11 @@ def main():
 
     args = parser.parse_args()
 
-    # Validate InferSim directory exists
-    infersim_dir = Path("InferSim")
-    if not infersim_dir.exists() or not infersim_dir.is_dir():
-        print(f"Error: InferSim directory not found at {infersim_dir.absolute()}")
-        print("Please run this script from the inference-sim root directory")
+    # Validate we're in the InferSim root directory
+    kernel_benchmark_dir = Path("kernel_benchmark")
+    if not kernel_benchmark_dir.exists() or not kernel_benchmark_dir.is_dir():
+        print(f"Error: kernel_benchmark directory not found at {kernel_benchmark_dir.absolute()}")
+        print("Please run this script from the InferSim root directory")
         sys.exit(1)
 
     # Load GPU specs
