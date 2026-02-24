@@ -90,8 +90,9 @@
   "gemm_sweep": {
     "H100": {
       "_comment": "M values are swept internally by deepgemm_gemm.py: [8, 16, 32, 64, 128, 256, 512, 1024, 4096, 8192, 16384, 32768, 64*1024, 128*1024]",
-      "k_values": [2048, 3584, 4096, 8192],
-      "n_values": [6144, 11008, 14336, 18944]
+      "_coverage": "k_values covers hidden_dim (input) + intermediate_dim (Down proj input). n_values covers head projections + intermediate_dim (Gate/Up output). All 13 experiment models covered.",
+      "k_values": [2048, 3584, 4096, 5120, 8192, 11008, 13824, 14336, 18944, 22016, 28672],
+      "n_values": [512, 640, 1024, 3584, 4096, 5120, 6144, 8192, 11008, 13824, 14336, 18944, 22016, 28672]
     }
   },
   "openshift": {
